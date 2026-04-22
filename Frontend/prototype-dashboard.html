@@ -1,0 +1,1419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Krishna Dudh — AI Demand Forecasting</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Tiro+Devanagari+Marathi:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --kd-blue:   #0a3d6b;
+      --kd-blue2:  #1565a8;
+      --kd-gold:   #e8a020;
+      --kd-gold2:  #f5c84a;
+      --kd-cream:  #fdf8ef;
+      --kd-white:  #ffffff;
+      --kd-text:   #1a1a2e;
+      --kd-muted:  #5a6a7a;
+      --kd-border: rgba(10,61,107,0.12);
+      --kd-success:#1d7a4f;
+      --kd-warn:   #b35900;
+      --kd-danger: #a32d2d;
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 16px;
+      --shadow-sm: 0 1px 4px rgba(10,61,107,0.08);
+      --shadow-md: 0 4px 20px rgba(10,61,107,0.12);
+    }
+
+    html { font-size: 15px; scroll-behavior: smooth; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--kd-cream);
+      color: var(--kd-text);
+      min-height: 100vh;
+      line-height: 1.6;
+    }
+
+    /* ── TICKER ── */
+    .ticker-wrap {
+      background: var(--kd-blue);
+      color: var(--kd-gold2);
+      font-size: 12.5px;
+      font-weight: 500;
+      letter-spacing: 0.03em;
+      overflow: hidden;
+      height: 30px;
+      display: flex;
+      align-items: center;
+    }
+    .ticker-inner {
+      display: flex;
+      white-space: nowrap;
+      animation: ticker 38s linear infinite;
+      gap: 0;
+    }
+    .ticker-inner span { padding: 0 3rem; }
+    .ticker-inner span::before { content: "◆"; margin-right: 1rem; color: var(--kd-gold); opacity: 0.7; }
+    @keyframes ticker { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+
+    /* ── HEADER ── */
+    header {
+      background: var(--kd-white);
+      border-bottom: 2.5px solid var(--kd-gold);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: var(--shadow-sm);
+    }
+    .header-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 1.5rem;
+      height: 68px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 2rem;
+    }
+    .logo-block { display: flex; align-items: center; gap: 14px; text-decoration: none; }
+    .logo-emblem {
+      width: 48px; height: 48px;
+      background: var(--kd-blue);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      border: 2px solid var(--kd-gold);
+    }
+    .logo-emblem svg { width: 26px; height: 26px; }
+    .logo-text-block { line-height: 1.2; }
+    .logo-title {
+      font-family: 'Tiro Devanagari Marathi', serif;
+      font-size: 18px;
+      color: var(--kd-blue);
+      display: block;
+    }
+    .logo-sub {
+      font-size: 10.5px;
+      color: var(--kd-muted);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    nav { display: flex; align-items: center; gap: 2px; }
+    nav a {
+      text-decoration: none;
+      color: var(--kd-muted);
+      font-size: 13.5px;
+      font-weight: 500;
+      padding: 6px 13px;
+      border-radius: var(--radius-sm);
+      transition: all 0.15s;
+      position: relative;
+      white-space: nowrap;
+    }
+    nav a:hover { color: var(--kd-blue); background: rgba(10,61,107,0.06); }
+    nav a.active {
+      color: var(--kd-blue);
+      background: rgba(10,61,107,0.08);
+      font-weight: 600;
+    }
+    nav a.active::after {
+      content: '';
+      position: absolute;
+      bottom: -1px;
+      left: 13px; right: 13px;
+      height: 2px;
+      background: var(--kd-gold);
+      border-radius: 2px;
+    }
+
+    .header-cta {
+      background: var(--kd-blue);
+      color: var(--kd-white) !important;
+      padding: 7px 16px !important;
+      border-radius: var(--radius-sm) !important;
+      font-weight: 600 !important;
+      font-size: 13px !important;
+      transition: background 0.15s !important;
+    }
+    .header-cta:hover { background: var(--kd-blue2) !important; color: white !important; }
+
+    /* ── HERO ── */
+    .hero {
+      background: linear-gradient(135deg, var(--kd-blue) 0%, #1a4f7a 50%, #0d3255 100%);
+      color: white;
+      padding: 5rem 1.5rem 4rem;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E") repeat;
+      pointer-events: none;
+    }
+    .hero-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr 380px;
+      gap: 3rem;
+      align-items: center;
+      position: relative;
+      z-index: 1;
+    }
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(232,160,32,0.2);
+      border: 1px solid rgba(232,160,32,0.4);
+      color: var(--kd-gold2);
+      font-size: 11.5px;
+      font-weight: 600;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      padding: 4px 12px;
+      border-radius: 20px;
+      margin-bottom: 1.2rem;
+    }
+    .hero-badge::before { content: '●'; font-size: 8px; animation: pulse 2s ease-in-out infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+    .hero h1 {
+      font-size: clamp(2rem, 4vw, 3rem);
+      font-weight: 300;
+      line-height: 1.15;
+      margin-bottom: 1rem;
+      letter-spacing: -0.02em;
+    }
+    .hero h1 strong { font-weight: 600; color: var(--kd-gold2); }
+    .hero p {
+      color: rgba(255,255,255,0.75);
+      font-size: 15.5px;
+      max-width: 480px;
+      margin-bottom: 2rem;
+    }
+    .hero-actions { display: flex; gap: 12px; flex-wrap: wrap; }
+    .btn-primary {
+      background: var(--kd-gold);
+      color: var(--kd-blue);
+      border: none;
+      padding: 11px 24px;
+      border-radius: var(--radius-sm);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s, transform 0.1s;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .btn-primary:hover { background: var(--kd-gold2); transform: translateY(-1px); }
+    .btn-ghost {
+      background: rgba(255,255,255,0.1);
+      color: white;
+      border: 1px solid rgba(255,255,255,0.25);
+      padding: 11px 24px;
+      border-radius: var(--radius-sm);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.15s;
+      text-decoration: none;
+    }
+    .btn-ghost:hover { background: rgba(255,255,255,0.18); }
+
+    /* ── HERO CARD ── */
+    .hero-card {
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: var(--radius-lg);
+      padding: 1.5rem;
+      backdrop-filter: blur(8px);
+    }
+    .hero-card-title {
+      font-size: 11.5px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--kd-gold2);
+      font-weight: 600;
+      margin-bottom: 1.2rem;
+    }
+    .festival-alert {
+      background: rgba(232,160,32,0.15);
+      border: 1px solid rgba(232,160,32,0.3);
+      border-radius: var(--radius-md);
+      padding: 12px 14px;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+    .festival-name { font-size: 13.5px; font-weight: 600; color: white; }
+    .festival-days { font-size: 11px; color: rgba(255,255,255,0.6); margin-top: 2px; }
+    .festival-spike {
+      font-size: 20px;
+      font-weight: 600;
+      color: var(--kd-gold2);
+      font-family: 'DM Mono', monospace;
+      white-space: nowrap;
+    }
+    .festival-spike span { font-size: 11px; color: rgba(255,255,255,0.5); display: block; text-align: right; }
+
+    /* ── METRICS BAR ── */
+    .metrics-bar {
+      background: var(--kd-white);
+      border-bottom: 1px solid var(--kd-border);
+    }
+    .metrics-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 1.5rem;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+    }
+    .metric-item {
+      padding: 1.4rem 1.5rem;
+      border-right: 1px solid var(--kd-border);
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .metric-item:first-child { padding-left: 0; }
+    .metric-item:last-child { border-right: none; }
+    .metric-icon {
+      width: 40px; height: 40px;
+      border-radius: var(--radius-sm);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+    .metric-icon.blue { background: rgba(10,61,107,0.08); }
+    .metric-icon.gold { background: rgba(232,160,32,0.12); }
+    .metric-icon.green { background: rgba(29,122,79,0.1); }
+    .metric-icon.orange { background: rgba(179,89,0,0.1); }
+    .metric-val { font-size: 22px; font-weight: 600; color: var(--kd-blue); font-family: 'DM Mono', monospace; line-height: 1; }
+    .metric-label { font-size: 11.5px; color: var(--kd-muted); margin-top: 3px; }
+    .metric-trend { font-size: 11px; font-weight: 600; }
+    .metric-trend.up { color: var(--kd-success); }
+    .metric-trend.down { color: var(--kd-danger); }
+
+    /* ── MAIN LAYOUT ── */
+    .main { max-width: 1200px; margin: 0 auto; padding: 2.5rem 1.5rem; }
+
+    /* ── SECTION TITLES ── */
+    .section-header {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      margin-bottom: 1.4rem;
+      gap: 1rem;
+    }
+    .section-title { font-size: 17px; font-weight: 600; color: var(--kd-blue); }
+    .section-link { font-size: 12.5px; color: var(--kd-blue2); text-decoration: none; }
+    .section-link:hover { text-decoration: underline; }
+
+    /* ── CARDS ── */
+    .card {
+      background: var(--kd-white);
+      border: 1px solid var(--kd-border);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-sm);
+    }
+    .card-header {
+      padding: 1.1rem 1.4rem;
+      border-bottom: 1px solid var(--kd-border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+    .card-title { font-size: 14px; font-weight: 600; color: var(--kd-blue); }
+    .card-subtitle { font-size: 12px; color: var(--kd-muted); margin-top: 2px; }
+    .card-body { padding: 1.4rem; }
+
+    /* ── GRID LAYOUTS ── */
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.2rem; }
+    .grid-main-side { display: grid; grid-template-columns: 1fr 340px; gap: 1.4rem; }
+
+    /* ── FORECAST CHART AREA ── */
+    .chart-controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .select-pill {
+      border: 1px solid var(--kd-border);
+      background: var(--kd-white);
+      border-radius: 20px;
+      padding: 5px 14px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 12.5px;
+      color: var(--kd-text);
+      cursor: pointer;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .select-pill:focus { border-color: var(--kd-blue2); }
+
+    .chart-area {
+      height: 260px;
+      position: relative;
+      margin-top: 1rem;
+    }
+    .chart-svg { width: 100%; height: 100%; }
+
+    /* ── FORECAST TABLE ── */
+    .forecast-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .forecast-table th {
+      text-align: left;
+      padding: 8px 12px;
+      background: rgba(10,61,107,0.04);
+      color: var(--kd-muted);
+      font-weight: 500;
+      font-size: 11.5px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      border-bottom: 1px solid var(--kd-border);
+    }
+    .forecast-table td {
+      padding: 10px 12px;
+      border-bottom: 1px solid rgba(10,61,107,0.05);
+      vertical-align: middle;
+    }
+    .forecast-table tr:last-child td { border-bottom: none; }
+    .forecast-table tr:hover td { background: rgba(10,61,107,0.025); }
+
+    .badge {
+      display: inline-block;
+      padding: 2px 9px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+    }
+    .badge-high { background: rgba(163,45,45,0.1); color: var(--kd-danger); }
+    .badge-medium { background: rgba(179,89,0,0.1); color: var(--kd-warn); }
+    .badge-low { background: rgba(29,122,79,0.1); color: var(--kd-success); }
+
+    .trend-bar-wrap { width: 80px; height: 6px; background: rgba(10,61,107,0.08); border-radius: 3px; display: inline-block; }
+    .trend-bar { height: 100%; border-radius: 3px; }
+    .trend-bar.high { background: var(--kd-danger); }
+    .trend-bar.medium { background: var(--kd-warn); }
+    .trend-bar.low { background: var(--kd-success); }
+
+    /* ── FESTIVAL CALENDAR ── */
+    .festival-list { display: flex; flex-direction: column; gap: 8px; }
+    .festival-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 12px;
+      border-radius: var(--radius-md);
+      background: rgba(10,61,107,0.03);
+      border: 1px solid var(--kd-border);
+      transition: background 0.15s;
+    }
+    .festival-row:hover { background: rgba(10,61,107,0.06); }
+    .festival-dot {
+      width: 36px; height: 36px;
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+    .festival-info { flex: 1; min-width: 0; }
+    .festival-info-name { font-size: 13px; font-weight: 600; color: var(--kd-text); }
+    .festival-info-date { font-size: 11px; color: var(--kd-muted); }
+    .festival-info-spike {
+      font-size: 13px;
+      font-weight: 600;
+      font-family: 'DM Mono', monospace;
+    }
+
+    /* ── MODEL METRICS ── */
+    .metric-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; }
+    .metric-box {
+      background: rgba(10,61,107,0.04);
+      border-radius: var(--radius-md);
+      padding: 1rem;
+      text-align: center;
+    }
+    .metric-box-val {
+      font-size: 24px;
+      font-weight: 600;
+      color: var(--kd-blue);
+      font-family: 'DM Mono', monospace;
+    }
+    .metric-box-label { font-size: 11px; color: var(--kd-muted); margin-top: 4px; }
+
+    /* ── UPLOAD AREA ── */
+    .upload-zone {
+      border: 2px dashed var(--kd-border);
+      border-radius: var(--radius-lg);
+      padding: 2.5rem 2rem;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .upload-zone:hover { border-color: var(--kd-blue2); background: rgba(10,61,107,0.02); }
+    .upload-icon { font-size: 32px; margin-bottom: 0.8rem; }
+    .upload-title { font-size: 14px; font-weight: 600; color: var(--kd-blue); margin-bottom: 4px; }
+    .upload-sub { font-size: 12.5px; color: var(--kd-muted); }
+
+    /* ── WHAT-IF ── */
+    .whatif-row { display: flex; align-items: center; gap: 12px; margin-bottom: 1rem; }
+    .whatif-label { font-size: 13px; color: var(--kd-muted); min-width: 110px; }
+    .whatif-control { flex: 1; }
+    .whatif-val { font-size: 13px; font-weight: 600; color: var(--kd-blue); font-family: 'DM Mono', monospace; min-width: 52px; text-align: right; }
+    input[type="range"] { width: 100%; accent-color: var(--kd-blue); cursor: pointer; }
+    .whatif-result {
+      background: linear-gradient(135deg, rgba(10,61,107,0.06), rgba(10,61,107,0.03));
+      border: 1px solid var(--kd-border);
+      border-radius: var(--radius-md);
+      padding: 1.2rem;
+      margin-top: 1.2rem;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+      text-align: center;
+    }
+    .wr-val { font-size: 22px; font-weight: 600; font-family: 'DM Mono', monospace; color: var(--kd-blue); }
+    .wr-label { font-size: 11px; color: var(--kd-muted); margin-top: 3px; }
+
+    /* ── ALERT BANNERS ── */
+    .alert {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 12px 16px;
+      border-radius: var(--radius-md);
+      margin-bottom: 10px;
+      font-size: 13px;
+    }
+    .alert-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+    .alert.warn { background: rgba(179,89,0,0.08); border: 1px solid rgba(179,89,0,0.2); color: var(--kd-warn); }
+    .alert.success { background: rgba(29,122,79,0.08); border: 1px solid rgba(29,122,79,0.2); color: var(--kd-success); }
+    .alert.danger { background: rgba(163,45,45,0.08); border: 1px solid rgba(163,45,45,0.2); color: var(--kd-danger); }
+    .alert strong { font-weight: 600; }
+
+    /* ── FOOTER ── */
+    footer {
+      background: var(--kd-blue);
+      color: rgba(255,255,255,0.55);
+      text-align: center;
+      padding: 1.5rem;
+      font-size: 12px;
+      margin-top: 3rem;
+    }
+    footer strong { color: rgba(255,255,255,0.8); }
+
+    /* ── PAGES (tab system) ── */
+    .page { display: none; }
+    .page.active { display: block; }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 900px) {
+      .hero-inner { grid-template-columns: 1fr; }
+      .hero-card { display: none; }
+      .metrics-inner { grid-template-columns: repeat(2,1fr); }
+      .grid-main-side { grid-template-columns: 1fr; }
+      nav a { display: none; }
+      nav a:last-child { display: inline-flex; }
+    }
+    @media (max-width: 600px) {
+      .metrics-inner { grid-template-columns: 1fr 1fr; }
+      .grid-2 { grid-template-columns: 1fr; }
+      .grid-3 { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- TICKER -->
+<div class="ticker-wrap" role="marquee" aria-label="News ticker">
+  <div class="ticker-inner" id="ticker">
+    <span>RAJARAMBAPU PATIL SAH. DUDH SANGH LTD. — ISLAMPUR</span>
+    <span>Krishna Dudh | Pure Milk from the Banks of Krishna River</span>
+    <span>Sponsored by Krushna Dudh — Rajarambapu Patil Sah. Dudh Sangh Ltd.</span>
+    <span>AI-Powered Demand Forecasting — Diwali 2025 Forecast Ready</span>
+    <span>RAJARAMBAPU PATIL SAH. DUDH SANGH LTD. — ISLAMPUR</span>
+    <span>Krishna Dudh | Pure Milk from the Banks of Krishna River</span>
+    <span>Sponsored by Krushna Dudh — Rajarambapu Patil Sah. Dudh Sangh Ltd.</span>
+    <span>AI-Powered Demand Forecasting — Diwali 2025 Forecast Ready</span>
+  </div>
+</div>
+
+<!-- HEADER -->
+<header>
+  <div class="header-inner">
+    <a class="logo-block" href="#" onclick="showPage('home')">
+      <div class="logo-emblem">
+        <!-- Milk drop SVG -->
+        <svg viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M13 2 C13 2 6 10 6 16 a7 7 0 0 0 14 0 C20 10 13 2 13 2 Z" fill="#e8a020"/>
+          <path d="M10 17 a3 3 0 0 0 6 0" stroke="white" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+        </svg>
+      </div>
+      <div class="logo-text-block">
+        <span class="logo-title">कृष्णा दूध</span>
+        <span class="logo-sub">AI Demand Forecasting System</span>
+      </div>
+    </a>
+
+    <nav>
+      <a href="#" class="active" onclick="showPage('home');return false;">Home</a>
+      <a href="#" onclick="showPage('forecast');return false;">Demand Forecast</a>
+      <a href="#" onclick="showPage('calendar');return false;">Festival Calendar</a>
+      <a href="#" onclick="showPage('whatif');return false;">What-If Analysis</a>
+      <a href="#" onclick="showPage('upload');return false;">Data Upload</a>
+      <a href="#" onclick="showPage('metrics');return false;">Model Metrics</a>
+      <a href="#" class="header-cta" onclick="showPage('forecast');return false;">Run Forecast ↗</a>
+    </nav>
+  </div>
+</header>
+
+<!-- ════════════ PAGE: HOME ════════════ -->
+<div id="page-home" class="page active">
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-inner">
+      <div>
+        <div class="hero-badge">Live System • Forecasting Active</div>
+        <h1>Festival-Aware<br><strong>Dairy Demand</strong><br>Forecasting</h1>
+        <p>AI-powered production intelligence for Krushna Dudh — predicting demand spikes for Diwali, Ganesh Chaturthi, Navratri, and more with ML + DL models trained on real dairy data.</p>
+        <div class="hero-actions">
+          <a class="btn-primary" href="#" onclick="showPage('forecast');return false;">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1l1.5 4h4l-3.2 2.4 1.2 4L7 9 3.5 11.4l1.2-4L1.5 5h4z" fill="currentColor"/></svg>
+            View Forecasts
+          </a>
+          <a class="btn-ghost" href="#" onclick="showPage('whatif');return false;">What-If Analysis</a>
+        </div>
+      </div>
+
+      <div class="hero-card">
+        <div class="hero-card-title">Upcoming Festival Alerts</div>
+
+        <div class="festival-alert">
+          <div>
+            <div class="festival-name">🪔 Diwali</div>
+            <div class="festival-days">In 22 days • Oct 2025</div>
+          </div>
+          <div class="festival-spike">+68%<span>milk demand</span></div>
+        </div>
+
+        <div class="festival-alert" style="background:rgba(255,255,255,0.07); border-color: rgba(255,255,255,0.15);">
+          <div>
+            <div class="festival-name">🎉 Navratri</div>
+            <div class="festival-days">In 8 days • Oct 2025</div>
+          </div>
+          <div class="festival-spike" style="color:#7fc9ff">+41%<span>paneer</span></div>
+        </div>
+
+        <div class="festival-alert" style="background:rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.1);">
+          <div>
+            <div class="festival-name">🙏 Ekadashi</div>
+            <div class="festival-days">In 3 days • Regular</div>
+          </div>
+          <div class="festival-spike" style="color:#90dfb0">+18%<span>curd</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- METRICS BAR -->
+  <div class="metrics-bar">
+    <div class="metrics-inner">
+      <div class="metric-item">
+        <div class="metric-icon blue">🥛</div>
+        <div>
+          <div class="metric-val">4,820<span style="font-size:13px;color:var(--kd-muted)">L</span></div>
+          <div class="metric-label">Today's Milk Forecast</div>
+          <div class="metric-trend up">↑ 12% vs last week</div>
+        </div>
+      </div>
+      <div class="metric-item">
+        <div class="metric-icon gold">📦</div>
+        <div>
+          <div class="metric-val">7.4%</div>
+          <div class="metric-label">Model MAPE</div>
+          <div class="metric-trend up">↓ from 9.1% baseline</div>
+        </div>
+      </div>
+      <div class="metric-item">
+        <div class="metric-icon green">📅</div>
+        <div>
+          <div class="metric-val">14</div>
+          <div class="metric-label">Festivals Tracked (2025)</div>
+          <div class="metric-trend up">All regions covered</div>
+        </div>
+      </div>
+      <div class="metric-item">
+        <div class="metric-icon orange">⚠️</div>
+        <div>
+          <div class="metric-val">3</div>
+          <div class="metric-label">Active Stock Alerts</div>
+          <div class="metric-trend down">Paneer, Ghee, Khoya</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN CONTENT -->
+  <div class="main">
+
+    <!-- ALERTS -->
+    <div class="alert warn">
+      <span class="alert-icon">⚠</span>
+      <span><strong>Diwali Alert:</strong> Paneer demand forecast +68% in 22 days. Recommend increasing production by 340 kg/day starting Oct 5.</span>
+    </div>
+    <div class="alert danger">
+      <span class="alert-icon">🔴</span>
+      <span><strong>Stock-out Risk:</strong> Khoya inventory at 3-day buffer. Festival demand window requires 14-day buffer. Immediate action needed.</span>
+    </div>
+    <div class="alert success">
+      <span class="alert-icon">✓</span>
+      <span><strong>Model Retrained:</strong> LSTM model updated with September 2025 sales data. MAPE improved from 8.3% → 7.4%.</span>
+    </div>
+
+    <!-- DEMAND OVERVIEW + FESTIVAL SIDEBAR -->
+    <div class="grid-main-side" style="margin-top: 2rem;">
+
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">7-Day Demand Forecast</div>
+            <div class="card-subtitle">All products · Sangli region</div>
+          </div>
+          <div class="chart-controls">
+            <select class="select-pill">
+              <option>All Products</option>
+              <option>Milk</option>
+              <option>Paneer</option>
+              <option>Ghee</option>
+              <option>Curd</option>
+              <option>Khoya</option>
+            </select>
+            <select class="select-pill">
+              <option>7 Days</option>
+              <option>30 Days</option>
+            </select>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="chart-area">
+            <svg class="chart-svg" viewBox="0 0 600 230" preserveAspectRatio="none">
+              <!-- Grid lines -->
+              <line x1="0" y1="50" x2="600" y2="50" stroke="rgba(10,61,107,0.07)" stroke-width="1"/>
+              <line x1="0" y1="100" x2="600" y2="100" stroke="rgba(10,61,107,0.07)" stroke-width="1"/>
+              <line x1="0" y1="150" x2="600" y2="150" stroke="rgba(10,61,107,0.07)" stroke-width="1"/>
+              <line x1="0" y1="200" x2="600" y2="200" stroke="rgba(10,61,107,0.07)" stroke-width="1"/>
+
+              <!-- Festival marker -->
+              <rect x="410" y="0" width="2" height="210" fill="rgba(232,160,32,0.4)"/>
+              <text x="415" y="16" fill="#b07000" font-size="10" font-family="DM Sans, sans-serif" font-weight="600">Navratri</text>
+
+              <!-- Actual demand area fill -->
+              <path d="M40,180 L120,160 L200,150 L280,140 L360,145 L440,110 L520,105 L560,90" stroke="none" fill="rgba(10,61,107,0.07)"/>
+              <!-- Actual demand line -->
+              <polyline points="40,180 120,160 200,150 280,140 360,145 440,110 520,105 560,90"
+                stroke="#0a3d6b" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+
+              <!-- Forecast line (dashed) -->
+              <polyline points="360,145 440,105 520,85 560,65"
+                stroke="#e8a020" stroke-width="2.5" fill="none" stroke-dasharray="6,4"
+                stroke-linecap="round" stroke-linejoin="round"/>
+
+              <!-- Data dots -->
+              <circle cx="40" cy="180" r="4" fill="#0a3d6b"/>
+              <circle cx="120" cy="160" r="4" fill="#0a3d6b"/>
+              <circle cx="200" cy="150" r="4" fill="#0a3d6b"/>
+              <circle cx="280" cy="140" r="4" fill="#0a3d6b"/>
+              <circle cx="360" cy="145" r="4" fill="#0a3d6b"/>
+              <circle cx="440" cy="105" r="4" fill="#e8a020"/>
+              <circle cx="520" cy="85" r="4" fill="#e8a020"/>
+              <circle cx="560" cy="65" r="4" fill="#e8a020"/>
+
+              <!-- X labels -->
+              <text x="40" y="225" text-anchor="middle" fill="#8899aa" font-size="10" font-family="DM Sans">Mon</text>
+              <text x="120" y="225" text-anchor="middle" fill="#8899aa" font-size="10" font-family="DM Sans">Tue</text>
+              <text x="200" y="225" text-anchor="middle" fill="#8899aa" font-size="10" font-family="DM Sans">Wed</text>
+              <text x="280" y="225" text-anchor="middle" fill="#8899aa" font-size="10" font-family="DM Sans">Thu</text>
+              <text x="360" y="225" text-anchor="middle" fill="#8899aa" font-size="10" font-family="DM Sans">Fri</text>
+              <text x="440" y="225" text-anchor="middle" fill="#e8a020" font-size="10" font-family="DM Sans" font-weight="600">Sat ★</text>
+              <text x="520" y="225" text-anchor="middle" fill="#8899aa" font-size="10" font-family="DM Sans">Sun</text>
+              <text x="560" y="225" text-anchor="middle" fill="#8899aa" font-size="10" font-family="DM Sans">Mon</text>
+
+              <!-- Legend -->
+              <line x1="340" y1="14" x2="360" y2="14" stroke="#0a3d6b" stroke-width="2.5"/>
+              <text x="364" y="18" fill="#5a6a7a" font-size="10" font-family="DM Sans">Actual</text>
+              <line x1="420" y1="14" x2="440" y2="14" stroke="#e8a020" stroke-width="2.5" stroke-dasharray="5,3"/>
+              <text x="444" y="18" fill="#5a6a7a" font-size="10" font-family="DM Sans">Forecast</text>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- FESTIVAL SIDEBAR -->
+      <div style="display:flex; flex-direction:column; gap:1.2rem;">
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Festival Calendar</div>
+              <div class="card-subtitle">Next 90 days</div>
+            </div>
+            <a href="#" class="section-link" onclick="showPage('calendar');return false;">View All →</a>
+          </div>
+          <div class="card-body" style="padding-top:1rem">
+            <div class="festival-list">
+              <div class="festival-row">
+                <div class="festival-dot" style="background:rgba(232,160,32,0.12)">🙏</div>
+                <div class="festival-info">
+                  <div class="festival-info-name">Ekadashi</div>
+                  <div class="festival-info-date">In 3 days</div>
+                </div>
+                <div class="festival-info-spike" style="color:var(--kd-success)">+18%</div>
+              </div>
+              <div class="festival-row">
+                <div class="festival-dot" style="background:rgba(163,45,45,0.08)">🎉</div>
+                <div class="festival-info">
+                  <div class="festival-info-name">Navratri</div>
+                  <div class="festival-info-date">In 8 days</div>
+                </div>
+                <div class="festival-info-spike" style="color:var(--kd-warn)">+41%</div>
+              </div>
+              <div class="festival-row">
+                <div class="festival-dot" style="background:rgba(232,160,32,0.15)">🪔</div>
+                <div class="festival-info">
+                  <div class="festival-info-name">Diwali</div>
+                  <div class="festival-info-date">In 22 days</div>
+                </div>
+                <div class="festival-info-spike" style="color:var(--kd-danger)">+68%</div>
+              </div>
+              <div class="festival-row">
+                <div class="festival-dot" style="background:rgba(10,61,107,0.07)">🐄</div>
+                <div class="festival-info">
+                  <div class="festival-info-name">Gopashtami</div>
+                  <div class="festival-info-date">In 34 days</div>
+                </div>
+                <div class="festival-info-spike" style="color:var(--kd-blue2)">+29%</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- MODEL STATUS -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Model Status</div>
+            <span class="badge badge-low">✓ Active</span>
+          </div>
+          <div class="card-body">
+            <div class="metric-grid">
+              <div class="metric-box">
+                <div class="metric-box-val">7.4%</div>
+                <div class="metric-box-label">MAPE</div>
+              </div>
+              <div class="metric-box">
+                <div class="metric-box-val">142</div>
+                <div class="metric-box-label">RMSE</div>
+              </div>
+              <div class="metric-box">
+                <div class="metric-box-val">98</div>
+                <div class="metric-box-label">MAE</div>
+              </div>
+            </div>
+            <div style="font-size:11.5px; color:var(--kd-muted); margin-top:1rem; text-align:center;">
+              Last trained: Sep 30, 2025 · LSTM + SARIMAX ensemble
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PRODUCTION RECOMMENDATIONS TABLE -->
+    <div style="margin-top:2rem;">
+      <div class="section-header">
+        <div class="section-title">Production Recommendations — Next 7 Days</div>
+        <a href="#" class="section-link">Export CSV ↓</a>
+      </div>
+      <div class="card">
+        <table class="forecast-table">
+          <thead>
+            <tr>
+              <th>Product</th>
+              <th>Baseline (L/kg)</th>
+              <th>Forecast</th>
+              <th>Spike %</th>
+              <th>Demand Bar</th>
+              <th>Risk Level</th>
+              <th>Recommendation</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Milk</strong><br><span style="font-size:11px;color:var(--kd-muted)">Full-fat, 500ml</span></td>
+              <td>3,200 L</td>
+              <td style="font-weight:600;color:var(--kd-blue);">5,380 L</td>
+              <td style="font-family:'DM Mono',monospace;color:var(--kd-danger);">+68%</td>
+              <td><div class="trend-bar-wrap"><div class="trend-bar high" style="width:68%"></div></div></td>
+              <td><span class="badge badge-high">High</span></td>
+              <td style="font-size:12px;">Increase production 2,180 L/day</td>
+            </tr>
+            <tr>
+              <td><strong>Paneer</strong><br><span style="font-size:11px;color:var(--kd-muted)">Fresh block</span></td>
+              <td>280 kg</td>
+              <td style="font-weight:600;color:var(--kd-blue);">460 kg</td>
+              <td style="font-family:'DM Mono',monospace;color:var(--kd-danger);">+64%</td>
+              <td><div class="trend-bar-wrap"><div class="trend-bar high" style="width:64%"></div></div></td>
+              <td><span class="badge badge-high">High</span></td>
+              <td style="font-size:12px;">Start 5 days before festival</td>
+            </tr>
+            <tr>
+              <td><strong>Ghee</strong><br><span style="font-size:11px;color:var(--kd-muted)">1 kg tin</span></td>
+              <td>420 kg</td>
+              <td style="font-weight:600;color:var(--kd-blue);">630 kg</td>
+              <td style="font-family:'DM Mono',monospace;color:var(--kd-warn);">+50%</td>
+              <td><div class="trend-bar-wrap"><div class="trend-bar medium" style="width:50%"></div></div></td>
+              <td><span class="badge badge-medium">Medium</span></td>
+              <td style="font-size:12px;">Build buffer stock 7 days prior</td>
+            </tr>
+            <tr>
+              <td><strong>Curd</strong><br><span style="font-size:11px;color:var(--kd-muted)">500g cup</span></td>
+              <td>850 kg</td>
+              <td style="font-weight:600;color:var(--kd-blue);">1,105 kg</td>
+              <td style="font-family:'DM Mono',monospace;color:var(--kd-warn);">+30%</td>
+              <td><div class="trend-bar-wrap"><div class="trend-bar medium" style="width:30%"></div></div></td>
+              <td><span class="badge badge-medium">Medium</span></td>
+              <td style="font-size:12px;">Scale production gradually</td>
+            </tr>
+            <tr>
+              <td><strong>Khoya</strong><br><span style="font-size:11px;color:var(--kd-muted)">Mawa block</span></td>
+              <td>120 kg</td>
+              <td style="font-weight:600;color:var(--kd-blue);">138 kg</td>
+              <td style="font-family:'DM Mono',monospace;color:var(--kd-success);">+15%</td>
+              <td><div class="trend-bar-wrap"><div class="trend-bar low" style="width:15%"></div></div></td>
+              <td><span class="badge badge-low">Low</span></td>
+              <td style="font-size:12px;">Routine adjustment sufficient</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div><!-- /page-home -->
+
+
+<!-- ════════════ PAGE: FORECAST ════════════ -->
+<div id="page-forecast" class="page">
+  <div class="main">
+    <div class="section-header">
+      <div class="section-title">Demand Forecast — Detailed View</div>
+      <a href="#" class="section-link">Export Report ↓</a>
+    </div>
+    <div class="grid-2" style="margin-bottom:1.4rem;">
+      <div class="card">
+        <div class="card-header"><div class="card-title">30-Day Milk Forecast</div></div>
+        <div class="card-body">
+          <div class="chart-area" style="height:200px">
+            <svg class="chart-svg" viewBox="0 0 580 180" preserveAspectRatio="none">
+              <line x1="0" y1="40" x2="580" y2="40" stroke="rgba(10,61,107,0.07)" stroke-width="1"/>
+              <line x1="0" y1="90" x2="580" y2="90" stroke="rgba(10,61,107,0.07)" stroke-width="1"/>
+              <line x1="0" y1="140" x2="580" y2="140" stroke="rgba(10,61,107,0.07)" stroke-width="1"/>
+              <rect x="290" y="0" width="2" height="155" fill="rgba(232,160,32,0.3)"/>
+              <text x="294" y="12" fill="#b07000" font-size="9" font-family="DM Sans">Navratri</text>
+              <rect x="420" y="0" width="2" height="155" fill="rgba(232,160,32,0.5)"/>
+              <text x="424" y="12" fill="#b07000" font-size="9" font-family="DM Sans">Diwali</text>
+              <polyline points="20,130 60,125 100,120 140,118 180,115 220,110 260,105 300,80 340,60 380,50 420,35 460,40 500,55 540,70"
+                stroke="#0a3d6b" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+              <polyline points="20,135 60,128 100,123 140,121 180,118 220,113 260,108 300,83 340,63 380,53 420,38 460,43 500,58 540,73"
+                stroke="rgba(10,61,107,0.15)" stroke-width="8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+              <text x="20" y="170" fill="#8899aa" font-size="9" font-family="DM Sans">Oct 1</text>
+              <text x="250" y="170" fill="#8899aa" font-size="9" font-family="DM Sans">Oct 15</text>
+              <text x="500" y="170" fill="#8899aa" font-size="9" font-family="DM Sans">Oct 30</text>
+            </svg>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><div class="card-title">30-Day Paneer Forecast</div></div>
+        <div class="card-body">
+          <div class="chart-area" style="height:200px">
+            <svg class="chart-svg" viewBox="0 0 580 180" preserveAspectRatio="none">
+              <line x1="0" y1="40" x2="580" y2="40" stroke="rgba(10,61,107,0.07)" stroke-width="1"/>
+              <line x1="0" y1="90" x2="580" y2="90" stroke="rgba(10,61,107,0.07)" stroke-width="1"/>
+              <line x1="0" y1="140" x2="580" y2="140" stroke="rgba(10,61,107,0.07)" stroke-width="1"/>
+              <rect x="290" y="0" width="2" height="155" fill="rgba(232,160,32,0.3)"/>
+              <rect x="420" y="0" width="2" height="155" fill="rgba(232,160,32,0.5)"/>
+              <polyline points="20,135 60,132 100,128 140,125 180,120 220,115 260,100 300,75 340,58 380,48 420,32 460,45 500,60 540,75"
+                stroke="#1d7a4f" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+              <polyline points="20,138 60,135 100,131 140,128 180,123 220,118 260,103 300,78 340,61 380,51 420,35 460,48 500,63 540,78"
+                stroke="rgba(29,122,79,0.15)" stroke-width="8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+              <text x="20" y="170" fill="#8899aa" font-size="9" font-family="DM Sans">Oct 1</text>
+              <text x="500" y="170" fill="#8899aa" font-size="9" font-family="DM Sans">Oct 30</text>
+            </svg>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><div class="card-title">Full Product Forecast Table — 7 Day</div></div>
+      <table class="forecast-table">
+        <thead>
+          <tr><th>Product</th><th>Mon</th><th>Tue</th><th>Wed</th><th>Thu</th><th>Fri</th><th>Sat</th><th>Sun</th><th>Festival Impact</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>Milk (L)</strong></td><td>3210</td><td>3180</td><td>3250</td><td>3400</td><td>3620</td><td style="color:var(--kd-danger);font-weight:600">5380</td><td>4900</td><td><span class="badge badge-high">Navratri +41%</span></td></tr>
+          <tr><td><strong>Paneer (kg)</strong></td><td>285</td><td>280</td><td>292</td><td>310</td><td>330</td><td style="color:var(--kd-danger);font-weight:600">460</td><td>390</td><td><span class="badge badge-high">+64%</span></td></tr>
+          <tr><td><strong>Curd (kg)</strong></td><td>840</td><td>855</td><td>870</td><td>900</td><td>960</td><td style="color:var(--kd-warn);font-weight:600">1105</td><td>980</td><td><span class="badge badge-medium">+30%</span></td></tr>
+          <tr><td><strong>Ghee (kg)</strong></td><td>415</td><td>420</td><td>430</td><td>460</td><td>510</td><td style="color:var(--kd-warn);font-weight:600">630</td><td>570</td><td><span class="badge badge-medium">+50%</span></td></tr>
+          <tr><td><strong>Butter (kg)</strong></td><td>180</td><td>175</td><td>185</td><td>195</td><td>210</td><td>230</td><td>220</td><td><span class="badge badge-low">+22%</span></td></tr>
+          <tr><td><strong>Khoya (kg)</strong></td><td>118</td><td>120</td><td>122</td><td>128</td><td>132</td><td>138</td><td>130</td><td><span class="badge badge-low">+15%</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════ PAGE: FESTIVAL CALENDAR ════════════ -->
+<div id="page-calendar" class="page">
+  <div class="main">
+    <div class="section-header">
+      <div class="section-title">Festival Calendar 2025 — Demand Impact</div>
+    </div>
+    <div class="grid-3">
+      <div class="card" style="border-top:3px solid var(--kd-danger);">
+        <div class="card-body">
+          <div style="font-size:28px;margin-bottom:8px">🪔</div>
+          <div style="font-weight:600;font-size:15px;color:var(--kd-text)">Diwali</div>
+          <div style="font-size:12px;color:var(--kd-muted);margin:4px 0 12px">Oct 20–24, 2025</div>
+          <div style="display:flex;flex-direction:column;gap:6px;font-size:12.5px;">
+            <div style="display:flex;justify-content:space-between"><span>Milk</span><strong style="color:var(--kd-danger)">+68%</strong></div>
+            <div style="display:flex;justify-content:space-between"><span>Paneer</span><strong style="color:var(--kd-danger)">+64%</strong></div>
+            <div style="display:flex;justify-content:space-between"><span>Ghee</span><strong style="color:var(--kd-warn)">+50%</strong></div>
+            <div style="display:flex;justify-content:space-between"><span>Khoya</span><strong style="color:var(--kd-warn)">+48%</strong></div>
+          </div>
+          <div style="margin-top:12px;"><span class="badge badge-high">High Impact</span></div>
+        </div>
+      </div>
+      <div class="card" style="border-top:3px solid var(--kd-warn);">
+        <div class="card-body">
+          <div style="font-size:28px;margin-bottom:8px">🎉</div>
+          <div style="font-weight:600;font-size:15px;color:var(--kd-text)">Navratri</div>
+          <div style="font-size:12px;color:var(--kd-muted);margin:4px 0 12px">Oct 8–17, 2025</div>
+          <div style="display:flex;flex-direction:column;gap:6px;font-size:12.5px;">
+            <div style="display:flex;justify-content:space-between"><span>Milk</span><strong style="color:var(--kd-warn)">+41%</strong></div>
+            <div style="display:flex;justify-content:space-between"><span>Paneer</span><strong style="color:var(--kd-warn)">+38%</strong></div>
+            <div style="display:flex;justify-content:space-between"><span>Curd</span><strong style="color:var(--kd-success)">+25%</strong></div>
+            <div style="display:flex;justify-content:space-between"><span>Butter</span><strong style="color:var(--kd-success)">+20%</strong></div>
+          </div>
+          <div style="margin-top:12px;"><span class="badge badge-medium">Medium Impact</span></div>
+        </div>
+      </div>
+      <div class="card" style="border-top:3px solid var(--kd-blue2);">
+        <div class="card-body">
+          <div style="font-size:28px;margin-bottom:8px">🐄</div>
+          <div style="font-weight:600;font-size:15px;color:var(--kd-text)">Gopashtami</div>
+          <div style="font-size:12px;color:var(--kd-muted);margin:4px 0 12px">Nov 1, 2025</div>
+          <div style="display:flex;flex-direction:column;gap:6px;font-size:12.5px;">
+            <div style="display:flex;justify-content:space-between"><span>Milk</span><strong style="color:var(--kd-warn)">+29%</strong></div>
+            <div style="display:flex;justify-content:space-between"><span>Curd</span><strong style="color:var(--kd-success)">+18%</strong></div>
+            <div style="display:flex;justify-content:space-between"><span>Ghee</span><strong style="color:var(--kd-success)">+22%</strong></div>
+          </div>
+          <div style="margin-top:12px;"><span class="badge badge-medium">Medium Impact</span></div>
+        </div>
+      </div>
+      <div class="card" style="border-top:3px solid var(--kd-success);">
+        <div class="card-body">
+          <div style="font-size:28px;margin-bottom:8px">🕌</div>
+          <div style="font-weight:600;font-size:15px;color:var(--kd-text)">Eid ul-Fitr</div>
+          <div style="font-size:12px;color:var(--kd-muted);margin:4px 0 12px">Mar 30, 2026 (est.)</div>
+          <div style="display:flex;flex-direction:column;gap:6px;font-size:12.5px;">
+            <div style="display:flex;justify-content:space-between"><span>Milk</span><strong style="color:var(--kd-success)">+22%</strong></div>
+            <div style="display:flex;justify-content:space-between"><span>Paneer</span><strong style="color:var(--kd-success)">+18%</strong></div>
+          </div>
+          <div style="margin-top:12px;"><span class="badge badge-low">Low-Medium</span></div>
+        </div>
+      </div>
+      <div class="card" style="border-top:3px solid var(--kd-success);">
+        <div class="card-body">
+          <div style="font-size:28px;margin-bottom:8px">🌸</div>
+          <div style="font-weight:600;font-size:15px;color:var(--kd-text)">Holi</div>
+          <div style="font-size:12px;color:var(--kd-muted);margin:4px 0 12px">Mar 13, 2026</div>
+          <div style="display:flex;flex-direction:column;gap:6px;font-size:12.5px;">
+            <div style="display:flex;justify-content:space-between"><span>Milk</span><strong style="color:var(--kd-warn)">+35%</strong></div>
+            <div style="display:flex;justify-content:space-between"><span>Curd</span><strong style="color:var(--kd-warn)">+40%</strong></div>
+            <div style="display:flex;justify-content:space-between"><span>Khoya</span><strong style="color:var(--kd-warn)">+38%</strong></div>
+          </div>
+          <div style="margin-top:12px;"><span class="badge badge-medium">Medium Impact</span></div>
+        </div>
+      </div>
+      <div class="card" style="border-top:3px solid var(--kd-muted);">
+        <div class="card-body">
+          <div style="font-size:28px;margin-bottom:8px">🙏</div>
+          <div style="font-weight:600;font-size:15px;color:var(--kd-text)">Ekadashi (monthly)</div>
+          <div style="font-size:12px;color:var(--kd-muted);margin:4px 0 12px">Every ~15 days</div>
+          <div style="display:flex;flex-direction:column;gap:6px;font-size:12.5px;">
+            <div style="display:flex;justify-content:space-between"><span>Curd</span><strong style="color:var(--kd-success)">+18%</strong></div>
+            <div style="display:flex;justify-content:space-between"><span>Milk</span><strong style="color:var(--kd-success)">+12%</strong></div>
+          </div>
+          <div style="margin-top:12px;"><span class="badge badge-low">Low Impact</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════ PAGE: WHAT-IF ANALYSIS ════════════ -->
+<div id="page-whatif" class="page">
+  <div class="main">
+    <div class="section-header">
+      <div class="section-title">What-If Analysis — Simulate Demand Scenarios</div>
+    </div>
+    <div class="grid-main-side">
+      <div class="card">
+        <div class="card-header"><div class="card-title">Scenario Parameters</div></div>
+        <div class="card-body">
+          <div class="whatif-row">
+            <div class="whatif-label">Festival Intensity</div>
+            <div class="whatif-control"><input type="range" min="1" max="100" value="70" id="wi-intensity" oninput="updateWhatIf()"></div>
+            <div class="whatif-val" id="wi-intensity-val">70%</div>
+          </div>
+          <div class="whatif-row">
+            <div class="whatif-label">Pre-festival Days</div>
+            <div class="whatif-control"><input type="range" min="1" max="14" value="5" id="wi-predays" oninput="updateWhatIf()"></div>
+            <div class="whatif-val" id="wi-predays-val">5 days</div>
+          </div>
+          <div class="whatif-row">
+            <div class="whatif-label">Region Coverage</div>
+            <div class="whatif-control"><input type="range" min="1" max="5" value="3" id="wi-region" oninput="updateWhatIf()"></div>
+            <div class="whatif-val" id="wi-region-val">Sangli</div>
+          </div>
+          <div class="whatif-row">
+            <div class="whatif-label">Weather Factor</div>
+            <div class="whatif-control"><input type="range" min="0" max="100" value="50" id="wi-weather" oninput="updateWhatIf()"></div>
+            <div class="whatif-val" id="wi-weather-val">Normal</div>
+          </div>
+
+          <div class="whatif-result" id="wi-result">
+            <div>
+              <div class="wr-val" id="wr-milk">5,624</div>
+              <div class="wr-label">Milk Forecast (L)</div>
+            </div>
+            <div>
+              <div class="wr-val" id="wr-paneer">462</div>
+              <div class="wr-label">Paneer (kg)</div>
+            </div>
+            <div>
+              <div class="wr-val" id="wr-spike">+72%</div>
+              <div class="wr-label">Avg Spike</div>
+            </div>
+          </div>
+
+          <div style="font-size:12px;color:var(--kd-muted);margin-top:1rem;line-height:1.6;">
+            <strong>Note:</strong> These simulations use the trained LSTM+SARIMAX ensemble. Results reflect estimated demand based on festival calendar features and historical patterns from Krushna Dudh sales data.
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:1.2rem;">
+        <div class="card">
+          <div class="card-header"><div class="card-title">Scenario Output</div></div>
+          <div class="card-body">
+            <div style="display:flex;flex-direction:column;gap:8px;font-size:13px;">
+              <div class="alert success"><span class="alert-icon">✓</span><span>Production feasible within current capacity</span></div>
+              <div class="alert warn"><span class="alert-icon">⚠</span><span>Paneer requires cold-storage expansion</span></div>
+            </div>
+            <table style="width:100%;font-size:12.5px;margin-top:1rem;border-collapse:collapse;">
+              <tr style="border-bottom:1px solid var(--kd-border);">
+                <td style="padding:6px 0;color:var(--kd-muted)">Extra milk needed</td>
+                <td style="text-align:right;font-weight:600;font-family:'DM Mono',monospace" id="wr-extra-milk">+2,424 L/day</td>
+              </tr>
+              <tr style="border-bottom:1px solid var(--kd-border);">
+                <td style="padding:6px 0;color:var(--kd-muted)">Production lead time</td>
+                <td style="text-align:right;font-weight:600;" id="wr-lead">5 days</td>
+              </tr>
+              <tr>
+                <td style="padding:6px 0;color:var(--kd-muted)">Estimated revenue impact</td>
+                <td style="text-align:right;font-weight:600;color:var(--kd-success)" id="wr-revenue">+₹1.4L</td>
+              </tr>
+            </table>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">Risk Assessment</div></div>
+          <div class="card-body">
+            <div style="display:flex;flex-direction:column;gap:10px;font-size:13px;">
+              <div style="display:flex;justify-content:space-between;align-items:center;">
+                <span>Overstock risk</span>
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <div style="width:80px;height:6px;background:rgba(10,61,107,0.1);border-radius:3px;overflow:hidden"><div style="height:100%;width:25%;background:var(--kd-success);border-radius:3px"></div></div>
+                  <span style="font-size:11px;color:var(--kd-success);font-weight:600">Low</span>
+                </div>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;">
+                <span>Stock-out risk</span>
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <div style="width:80px;height:6px;background:rgba(10,61,107,0.1);border-radius:3px;overflow:hidden"><div style="height:100%;width:65%;background:var(--kd-warn);border-radius:3px"></div></div>
+                  <span style="font-size:11px;color:var(--kd-warn);font-weight:600">Medium</span>
+                </div>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;">
+                <span>Spoilage risk</span>
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <div style="width:80px;height:6px;background:rgba(10,61,107,0.1);border-radius:3px;overflow:hidden"><div style="height:100%;width:40%;background:var(--kd-blue2);border-radius:3px"></div></div>
+                  <span style="font-size:11px;color:var(--kd-blue2);font-weight:600">Moderate</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════ PAGE: DATA UPLOAD ════════════ -->
+<div id="page-upload" class="page">
+  <div class="main">
+    <div class="section-header">
+      <div class="section-title">Data Upload — Historical Sales Data</div>
+    </div>
+    <div class="grid-2">
+      <div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">Upload Sales Data (CSV / Excel)</div><div class="card-subtitle">Marathi & English supported</div></div>
+          <div class="card-body">
+            <div class="upload-zone" onclick="document.getElementById('file-input').click()">
+              <div class="upload-icon">📁</div>
+              <div class="upload-title">Drop CSV or Excel file here</div>
+              <div class="upload-sub">Supports Marathi column names · Max 50MB · .csv, .xlsx</div>
+              <input type="file" id="file-input" style="display:none" accept=".csv,.xlsx,.xls">
+            </div>
+            <div style="margin-top:1.2rem;">
+              <div style="font-size:12.5px;font-weight:600;color:var(--kd-blue);margin-bottom:8px;">Expected Columns</div>
+              <div style="display:flex;flex-wrap:wrap;gap:6px;">
+                <span style="background:rgba(10,61,107,0.07);color:var(--kd-blue);font-size:11.5px;padding:3px 10px;border-radius:12px;font-family:'DM Mono',monospace">दिनांक / Date</span>
+                <span style="background:rgba(10,61,107,0.07);color:var(--kd-blue);font-size:11.5px;padding:3px 10px;border-radius:12px;font-family:'DM Mono',monospace">उत्पाद / Product</span>
+                <span style="background:rgba(10,61,107,0.07);color:var(--kd-blue);font-size:11.5px;padding:3px 10px;border-radius:12px;font-family:'DM Mono',monospace">विक्री / Sales</span>
+                <span style="background:rgba(10,61,107,0.07);color:var(--kd-blue);font-size:11.5px;padding:3px 10px;border-radius:12px;font-family:'DM Mono',monospace">प्रदेश / Region</span>
+                <span style="background:rgba(10,61,107,0.07);color:var(--kd-blue);font-size:11.5px;padding:3px 10px;border-radius:12px;font-family:'DM Mono',monospace">unit</span>
+              </div>
+            </div>
+            <div style="margin-top:1rem;">
+              <button class="btn-primary" style="width:100%;justify-content:center;background:var(--kd-blue);color:white;border:none;padding:10px;">
+                Upload & Preprocess Data
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:1.2rem;">
+          <div class="card-header"><div class="card-title">Preprocessing Pipeline Status</div></div>
+          <div class="card-body">
+            <div style="display:flex;flex-direction:column;gap:8px;font-size:13px;">
+              <div style="display:flex;align-items:center;gap:10px;">
+                <span style="color:var(--kd-success);font-size:16px">✓</span>
+                <span style="color:var(--kd-muted)">Marathi → English column mapping</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;">
+                <span style="color:var(--kd-success);font-size:16px">✓</span>
+                <span style="color:var(--kd-muted)">Date parsing (DD/MM/YYYY, Indian format)</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;">
+                <span style="color:var(--kd-success);font-size:16px">✓</span>
+                <span style="color:var(--kd-muted)">Missing value imputation</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;">
+                <span style="color:var(--kd-success);font-size:16px">✓</span>
+                <span style="color:var(--kd-muted)">Outlier detection &amp; treatment</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;">
+                <span style="color:var(--kd-success);font-size:16px">✓</span>
+                <span style="color:var(--kd-muted)">Festival feature engineering</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;">
+                <span style="color:var(--kd-warn);font-size:16px">⟳</span>
+                <span style="color:var(--kd-muted)">Awaiting new data upload for retraining</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><div class="card-title">Data Quality Report</div><div class="card-subtitle">Last upload: Sep 30, 2025</div></div>
+        <div class="card-body">
+          <div class="metric-grid" style="grid-template-columns:repeat(2,1fr);margin-bottom:1.4rem;">
+            <div class="metric-box">
+              <div class="metric-box-val">3,284</div>
+              <div class="metric-box-label">Total records</div>
+            </div>
+            <div class="metric-box">
+              <div class="metric-box-val">98.2%</div>
+              <div class="metric-box-label">Data completeness</div>
+            </div>
+            <div class="metric-box">
+              <div class="metric-box-val">47</div>
+              <div class="metric-box-label">Null values fixed</div>
+            </div>
+            <div class="metric-box">
+              <div class="metric-box-val">12</div>
+              <div class="metric-box-label">Outliers removed</div>
+            </div>
+          </div>
+          <div style="font-size:12.5px;font-weight:600;color:var(--kd-blue);margin-bottom:8px;">Marathi Column Mapping Detected</div>
+          <table style="width:100%;font-size:12px;border-collapse:collapse;">
+            <tr style="border-bottom:1px solid var(--kd-border);">
+              <th style="text-align:left;padding:5px 0;color:var(--kd-muted);font-weight:500">Original (Marathi)</th>
+              <th style="text-align:right;padding:5px 0;color:var(--kd-muted);font-weight:500">Mapped To</th>
+            </tr>
+            <tr><td style="padding:5px 0;color:var(--kd-text)">दिनांक</td><td style="text-align:right;font-family:'DM Mono',monospace;color:var(--kd-blue2)">date</td></tr>
+            <tr><td style="padding:5px 0;color:var(--kd-text)">उत्पादनाचे नाव</td><td style="text-align:right;font-family:'DM Mono',monospace;color:var(--kd-blue2)">product_name</td></tr>
+            <tr><td style="padding:5px 0;color:var(--kd-text)">विक्री प्रमाण</td><td style="text-align:right;font-family:'DM Mono',monospace;color:var(--kd-blue2)">sales_qty</td></tr>
+            <tr><td style="padding:5px 0;color:var(--kd-text)">प्रदेश</td><td style="text-align:right;font-family:'DM Mono',monospace;color:var(--kd-blue2)">region</td></tr>
+            <tr><td style="padding:5px 0;color:var(--kd-text)">किंमत</td><td style="text-align:right;font-family:'DM Mono',monospace;color:var(--kd-blue2)">price</td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════ PAGE: MODEL METRICS ════════════ -->
+<div id="page-metrics" class="page">
+  <div class="main">
+    <div class="section-header">
+      <div class="section-title">Model Performance Metrics</div>
+    </div>
+    <div class="grid-3" style="margin-bottom:1.4rem;">
+      <div class="card" style="border-top:3px solid var(--kd-blue);">
+        <div class="card-body" style="text-align:center;padding:1.5rem;">
+          <div style="font-size:12px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--kd-muted);margin-bottom:0.8rem">LSTM Model</div>
+          <div style="font-size:42px;font-weight:600;font-family:'DM Mono',monospace;color:var(--kd-blue)">7.4%</div>
+          <div style="font-size:12px;color:var(--kd-muted);margin-top:4px">MAPE</div>
+          <div style="margin-top:1rem;display:flex;justify-content:center;gap:1.5rem;font-size:12.5px;">
+            <div><div style="font-weight:600;font-family:'DM Mono',monospace;color:var(--kd-text)">142</div><div style="color:var(--kd-muted)">RMSE</div></div>
+            <div><div style="font-weight:600;font-family:'DM Mono',monospace;color:var(--kd-text)">98</div><div style="color:var(--kd-muted)">MAE</div></div>
+          </div>
+          <div style="margin-top:1rem;"><span class="badge badge-low">Best Model</span></div>
+        </div>
+      </div>
+      <div class="card" style="border-top:3px solid var(--kd-muted);">
+        <div class="card-body" style="text-align:center;padding:1.5rem;">
+          <div style="font-size:12px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--kd-muted);margin-bottom:0.8rem">SARIMAX</div>
+          <div style="font-size:42px;font-weight:600;font-family:'DM Mono',monospace;color:var(--kd-text)">8.1%</div>
+          <div style="font-size:12px;color:var(--kd-muted);margin-top:4px">MAPE</div>
+          <div style="margin-top:1rem;display:flex;justify-content:center;gap:1.5rem;font-size:12.5px;">
+            <div><div style="font-weight:600;font-family:'DM Mono',monospace;color:var(--kd-text)">168</div><div style="color:var(--kd-muted)">RMSE</div></div>
+            <div><div style="font-weight:600;font-family:'DM Mono',monospace;color:var(--kd-text)">114</div><div style="color:var(--kd-muted)">MAE</div></div>
+          </div>
+          <div style="margin-top:1rem;"><span class="badge badge-medium">Deployed</span></div>
+        </div>
+      </div>
+      <div class="card" style="border-top:3px solid var(--kd-gold);">
+        <div class="card-body" style="text-align:center;padding:1.5rem;">
+          <div style="font-size:12px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--kd-muted);margin-bottom:0.8rem">Ensemble (LSTM+SARIMAX)</div>
+          <div style="font-size:42px;font-weight:600;font-family:'DM Mono',monospace;color:var(--kd-gold)">6.8%</div>
+          <div style="font-size:12px;color:var(--kd-muted);margin-top:4px">MAPE</div>
+          <div style="margin-top:1rem;display:flex;justify-content:center;gap:1.5rem;font-size:12.5px;">
+            <div><div style="font-weight:600;font-family:'DM Mono',monospace;color:var(--kd-text)">128</div><div style="color:var(--kd-muted)">RMSE</div></div>
+            <div><div style="font-weight:600;font-family:'DM Mono',monospace;color:var(--kd-text)">87</div><div style="color:var(--kd-muted)">MAE</div></div>
+          </div>
+          <div style="margin-top:1rem;"><span class="badge" style="background:rgba(232,160,32,0.15);color:var(--kd-warn)">Target Model</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><div class="card-title">Model Comparison Table</div></div>
+      <table class="forecast-table">
+        <thead>
+          <tr><th>Model</th><th>MAPE (%)</th><th>RMSE</th><th>MAE</th><th>Festival-Aware</th><th>Training Time</th><th>Status</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>LSTM</strong></td><td style="font-family:'DM Mono',monospace">7.4</td><td>142</td><td>98</td><td><span style="color:var(--kd-success)">✓ Yes</span></td><td>4.2 min</td><td><span class="badge badge-low">Active</span></td></tr>
+          <tr><td><strong>GRU</strong></td><td style="font-family:'DM Mono',monospace">7.8</td><td>156</td><td>104</td><td><span style="color:var(--kd-success)">✓ Yes</span></td><td>3.8 min</td><td><span class="badge badge-low">Active</span></td></tr>
+          <tr><td><strong>SARIMAX</strong></td><td style="font-family:'DM Mono',monospace">8.1</td><td>168</td><td>114</td><td><span style="color:var(--kd-success)">✓ Yes</span></td><td>1.1 min</td><td><span class="badge badge-low">Active</span></td></tr>
+          <tr><td><strong>Prophet</strong></td><td style="font-family:'DM Mono',monospace">9.3</td><td>188</td><td>132</td><td><span style="color:var(--kd-success)">✓ Yes</span></td><td>0.8 min</td><td><span class="badge badge-medium">Baseline</span></td></tr>
+          <tr><td><strong>Random Forest</strong></td><td style="font-family:'DM Mono',monospace">10.8</td><td>210</td><td>148</td><td><span style="color:var(--kd-warn)">Partial</span></td><td>0.5 min</td><td><span class="badge badge-medium">Baseline</span></td></tr>
+          <tr><td><strong>XGBoost</strong></td><td style="font-family:'DM Mono',monospace">9.9</td><td>198</td><td>139</td><td><span style="color:var(--kd-warn)">Partial</span></td><td>0.4 min</td><td><span class="badge badge-medium">Baseline</span></td></tr>
+          <tr style="background:rgba(232,160,32,0.05)"><td><strong>Ensemble ★</strong></td><td style="font-family:'DM Mono',monospace;color:var(--kd-gold);font-weight:600">6.8</td><td style="font-weight:600">128</td><td style="font-weight:600">87</td><td><span style="color:var(--kd-success)">✓ Yes</span></td><td>6.1 min</td><td><span class="badge" style="background:rgba(232,160,32,0.15);color:var(--kd-warn)">Target</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <strong>RAJARAMBAPU PATIL SAH. DUDH SANGH LTD.</strong> · Islampur, Maharashtra · AI Demand Forecasting System<br>
+  <span style="font-size:11px;margin-top:4px;display:block;">Developed by Group G-10 · Dept. of CSE (AI &amp; ML) · Rajarambapu Institute of Technology · 2025–26</span>
+</footer>
+
+<script>
+  const regions = ['Local','Tasgaon','Sangli','Kolhapur','Pune'];
+  const weathers = ['Dry','Normal','Humid','Rainy','Cold'];
+
+  function showPage(id) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.getElementById('page-' + id).classList.add('active');
+    document.querySelectorAll('nav a').forEach(a => a.classList.remove('active'));
+    const map = {home:0,forecast:1,calendar:2,whatif:3,upload:4,metrics:5};
+    const idx = map[id];
+    if(idx !== undefined) {
+      const links = document.querySelectorAll('nav a:not(.header-cta)');
+      if(links[idx]) links[idx].classList.add('active');
+    }
+    window.scrollTo(0,0);
+  }
+
+  function updateWhatIf() {
+    const intensity = parseInt(document.getElementById('wi-intensity').value);
+    const predays   = parseInt(document.getElementById('wi-predays').value);
+    const region    = parseInt(document.getElementById('wi-region').value);
+    const weather   = parseInt(document.getElementById('wi-weather').value);
+
+    document.getElementById('wi-intensity-val').textContent = intensity + '%';
+    document.getElementById('wi-predays-val').textContent   = predays + ' days';
+    document.getElementById('wi-region-val').textContent    = regions[region-1];
+    document.getElementById('wi-weather-val').textContent   = weathers[Math.round(weather/25)];
+
+    const baseMilk   = 3200;
+    const basePaneer = 280;
+    const spike = (intensity / 100) * 80;
+    const prefactor  = 1 + predays * 0.03;
+    const wfactor    = 1 + (weather - 50) * 0.001;
+    const rfactor    = 0.85 + region * 0.08;
+
+    const milk   = Math.round(baseMilk   * (1 + spike/100) * prefactor * wfactor * rfactor);
+    const paneer = Math.round(basePaneer * (1 + spike/100) * prefactor * rfactor);
+    const avgSpike = Math.round(spike * prefactor * rfactor);
+
+    document.getElementById('wr-milk').textContent    = milk.toLocaleString('en-IN');
+    document.getElementById('wr-paneer').textContent  = paneer;
+    document.getElementById('wr-spike').textContent   = '+' + avgSpike + '%';
+    document.getElementById('wr-extra-milk').textContent = '+' + (milk - baseMilk).toLocaleString('en-IN') + ' L/day';
+    document.getElementById('wr-lead').textContent   = predays + ' days';
+    const rev = ((milk - baseMilk) * 48 / 100000).toFixed(1);
+    document.getElementById('wr-revenue').textContent = '+₹' + rev + 'L';
+  }
+</script>
+
+</body>
+</html>
