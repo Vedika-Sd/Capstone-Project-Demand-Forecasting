@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Krishna Dairy – Sales Analyser</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  :root{
+    --cream:#FDF8F0;
+    --milk:#FFFFFF;
+    --gold:#C8872A;
+    --gold-light:#F0C060;
+    --navy:#1A2E4A;
+    --teal:#2A7A6F;
+    --teal-light:#3FA090;
+    --text:#1A2E4A;
+    --muted:#6B7B8D;
+    --border:#E0D8CC;
+    --red:#C0392B;
+    --green:#27AE60;
+    --radius:12px;
+    --shadow:0 2px 16px rgba(26,46,74,.10);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--cream);color:var(--text);min-height:100vh}
+
+  /* Header */
+  header{background:var(--navy);color:#fff;padding:18px 32px;display:flex;align-items:center;gap:16px;box-shadow:0 2px 12px rgba(0,0,0,.2)}
+  .logo{width:44px;height:44px;background:var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+  header h1{font-size:1.4rem;font-weight:700;letter-spacing:.5px}
+  header p{font-size:.82rem;opacity:.7;margin-top:2px}
+
+  /* Layout */
+  .container{max-width:1300px;margin:0 auto;padding:28px 20px}
+
+  /* Upload Section */
+  .upload-card{background:var(--milk);border-radius:var(--radius);box-shadow:var(--shadow);padding:36px;text-align:center;border:2px dashed var(--border);transition:.2s;margin-bottom:28px;position:relative}
+  .upload-card.dragover{border-color:var(--teal);background:#f0faf9}
+  .upload-icon{font-size:3rem;margin-bottom:12px}
+  .upload-card h2{font-size:1.1rem;color:var(--navy);margin-bottom:6px}
+  .upload-card p{color:var(--muted);font-size:.88rem;margin-bottom:18px}
+  .upload-card small{display:block;margin-top:8px;color:var(--muted);font-size:.78rem}
+  #fileInput{display:none}
+  .btn{display:inline-flex;align-items:center;gap:8px;padding:10px 22px;border-radius:8px;border:none;font-size:.9rem;font-weight:600;cursor:pointer;transition:.18s}
+  .btn-primary{background:var(--teal);color:#fff}
+  .btn-primary:hover{background:var(--teal-light)}
+  .btn-gold{background:var(--gold);color:#fff}
+  .btn-gold:hover{background:var(--gold-light);color:var(--navy)}
+  .btn-outline{background:transparent;color:var(--navy);border:1.5px solid var(--border)}
+  .btn-outline:hover{border-color:var(--teal);color:var(--teal)}
+  #uploadStatus{margin-top:14px;font-size:.9rem;font-weight:600}
+  .status-ok{color:var(--green)}
+  .status-err{color:var(--red)}
+
+  /* Info pills */
+  .info-pills{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:14px}
+  .pill{background:var(--cream);border:1px solid var(--border);border-radius:20px;padding:5px 14px;font-size:.8rem;color:var(--navy)}
+  .pill span{font-weight:700;color:var(--teal)}
+
+  /* Filters Panel */
+  .filters-card{background:var(--milk);border-radius:var(--radius);box-shadow:var(--shadow);padding:24px 28px;margin-bottom:28px;display:none}
+  .filters-card h3{font-size:1rem;font-weight:700;color:var(--navy);margin-bottom:16px;display:flex;align-items:center;gap:8px}
+  .filters-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px}
+  .filter-group label{display:block;font-size:.78rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+  .filter-group select{width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:.9rem;background:#fff;color:var(--text);appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M6 8L1 3h10z' fill='%236B7B8D'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;cursor:pointer}
+  .filter-group select:focus{outline:none;border-color:var(--teal)}
+
+  /* Product selector */
+  .product-selector{margin-top:18px}
+  .product-selector h4{font-size:.85rem;font-weight:700;color:var(--navy);margin-bottom:10px}
+  .product-chips{display:flex;flex-wrap:wrap;gap:7px;max-height:150px;overflow-y:auto;padding:4px 0}
+  .chip{padding:5px 14px;border-radius:20px;border:1.5px solid var(--border);background:#fff;font-size:.82rem;cursor:pointer;transition:.15s;user-select:none;color:var(--text)}
+  .chip:hover{border-color:var(--teal);color:var(--teal)}
+  .chip.selected{background:var(--teal);border-color:var(--teal);color:#fff}
+  .chip.selected-gold{background:var(--gold);border-color:var(--gold);color:#fff}
+  .chip-actions{display:flex;gap:8px;margin-top:10px}
+
+  /* Charts Grid */
+  .charts-section{display:none}
+  .section-title{font-size:1.05rem;font-weight:700;color:var(--navy);margin-bottom:18px;padding-bottom:8px;border-bottom:2px solid var(--gold);display:flex;align-items:center;gap:8px}
+  .charts-row{display:grid;gap:22px;margin-bottom:22px}
+  .charts-row.cols-2{grid-template-columns:1fr 1fr}
+  .charts-row.cols-1{grid-template-columns:1fr}
+  .chart-card{background:var(--milk);border-radius:var(--radius);box-shadow:var(--shadow);padding:22px 24px}
+  .chart-card h4{font-size:.92rem;font-weight:700;color:var(--navy);margin-bottom:4px}
+  .chart-card .chart-desc{font-size:.78rem;color:var(--muted);margin-bottom:16px}
+  .chart-wrap{position:relative;height:300px}
+  .chart-wrap.tall{height:380px}
+
+  /* Forecast table */
+  #forecastSection{margin-top:28px}
+  .forecast-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
+  .category-block{background:var(--milk);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+  .category-block .cat-header{padding:12px 18px;font-size:.9rem;font-weight:700;color:#fff}
+  .cat-stable{background:var(--teal)}
+  .cat-seasonal{background:#7B6FA0}
+  .cat-festive{background:var(--gold)}
+  .cat-rare{background:var(--muted)}
+  .cat-body{padding:10px 18px 14px}
+  .prod-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border);font-size:.82rem}
+  .prod-row:last-child{border:none}
+  .prod-name{color:var(--text);font-weight:500}
+  .prod-avg{color:var(--muted);font-size:.76rem}
+
+  /* Loading overlay */
+  .loading{display:none;position:fixed;inset:0;background:rgba(255,255,255,.7);z-index:999;align-items:center;justify-content:center;flex-direction:column;gap:12px}
+  .loading.show{display:flex}
+  .spinner{width:40px;height:40px;border:4px solid var(--border);border-top-color:var(--teal);border-radius:50%;animation:spin .7s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  /* Scroll hint */
+  .scroll-hint{text-align:center;padding:10px;color:var(--muted);font-size:.82rem;animation:bounce 1.5s infinite}
+  @keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(4px)}}
+
+  /* Responsive */
+  @media(max-width:768px){
+    .charts-row.cols-2{grid-template-columns:1fr}
+    header{padding:14px 16px}
+    .container{padding:16px 12px}
+  }
+
+  .empty-state{text-align:center;padding:40px;color:var(--muted);font-size:.9rem}
+  .tag{display:inline-block;padding:2px 8px;border-radius:4px;font-size:.72rem;font-weight:700;color:#fff;margin-left:6px}
+  .tag-stable{background:var(--teal)}
+  .tag-seasonal{background:#7B6FA0}
+  .tag-festive{background:var(--gold)}
+  .tag-rare{background:var(--muted)}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">🥛</div>
+  <div>
+    <h1>Krishna Dairy — Sales Analyser</h1>
+    <p>Upload your sales data to explore trends, festivals, and forecasts</p>
+  </div>
+</header>
+
+<div id="loadingOverlay" class="loading">
+  <div class="spinner"></div>
+  <p style="color:var(--navy);font-weight:600">Analysing data…</p>
+</div>
+
+<div class="container">
+
+  <!-- Upload -->
+  <div class="upload-card" id="uploadCard">
+    <div class="upload-icon">📊</div>
+    <h2>Upload Your Sales Data</h2>
+    <p>Drag &amp; drop your file here, or click to browse</p>
+    <button class="btn btn-primary" onclick="document.getElementById('fileInput').click()">
+      📂 Choose File
+    </button>
+    <small>Columns expected: <strong>Date, Product, Quantity</strong> — Festival column optional · CSV or Excel (.xlsx)</small>
+    <input type="file" id="fileInput" accept=".csv,.xlsx,.xls"/>
+    <div id="uploadStatus"></div>
+    <div id="infoPills" class="info-pills"></div>
+  </div>
+
+  <!-- Filters -->
+  <div class="filters-card" id="filtersCard">
+    <h3>🎛️ Filters &amp; Selection</h3>
+    <div class="filters-grid">
+      <div class="filter-group">
+        <label>Year</label>
+        <select id="filterYear"><option value="">All Years</option></select>
+      </div>
+      <div class="filter-group">
+        <label>Month</label>
+        <select id="filterMonth"><option value="">All Months</option></select>
+      </div>
+      <div class="filter-group">
+        <label>Festival</label>
+        <select id="filterFestival"><option value="">All Festivals</option></select>
+      </div>
+    </div>
+
+    <div class="product-selector">
+      <h4>📦 Select Products (for charts 1, 2 &amp; 4)</h4>
+      <div class="chip-actions">
+        <button class="btn btn-outline" onclick="clearProducts()" style="font-size:.78rem;padding:5px 12px">Clear All</button>
+        <button class="btn btn-outline" onclick="selectAllProducts()" style="font-size:.78rem;padding:5px 12px">Select All</button>
+      </div>
+      <div class="product-chips" id="productChips"></div>
+    </div>
+
+    <div style="margin-top:18px;display:flex;gap:10px;flex-wrap:wrap">
+      <button class="btn btn-gold" onclick="refreshAll()">🔄 Refresh Charts</button>
+      <button class="btn btn-outline" onclick="scrollToCharts()">⬇ View Charts</button>
+    </div>
+  </div>
+
+  <!-- Charts Section -->
+  <div class="charts-section" id="chartsSection">
+
+    <!-- Chart 1 & 2 -->
+    <p class="section-title">📈 Trend Analysis</p>
+    <div class="charts-row cols-2">
+      <div class="chart-card">
+        <h4>Chart 1 — Product Sales Over Years</h4>
+        <p class="chart-desc">Annual quantity trend per product · applies year &amp; festival filter</p>
+        <div class="chart-wrap"><canvas id="chart1"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <h4>Chart 2 — Monthly Distribution</h4>
+        <p class="chart-desc">Month-wise breakdown · <em>month filter ignored</em> · year &amp; festival apply</p>
+        <div class="chart-wrap"><canvas id="chart2"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Chart 3 -->
+    <p class="section-title">🏆 Top Performers</p>
+    <div class="charts-row cols-2">
+      <div class="chart-card">
+        <h4>Chart 3 — Top 5 Products in Selected Month</h4>
+        <p class="chart-desc">Overall sales (festival + non-festival) for the chosen month</p>
+        <div style="margin-bottom:12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <select id="top5Month" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:7px;font-size:.88rem">
+            <option value="">— Pick a month —</option>
+          </select>
+          <button class="btn btn-primary" onclick="loadChart3()" style="padding:7px 14px;font-size:.84rem">Go</button>
+        </div>
+        <div class="chart-wrap"><canvas id="chart3"></canvas></div>
+      </div>
+
+      <!-- Chart 4 -->
+      <div class="chart-card">
+        <h4>Chart 4 — Festival vs Non-Festival Sales</h4>
+        <p class="chart-desc">For the primary selected product in the chosen year (month ignored)</p>
+        <div class="chart-wrap"><canvas id="chart4"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Chart 5 Forecast -->
+    <div id="forecastSection">
+      <p class="section-title">🔮 Product Classification &amp; Forecast</p>
+      <p style="color:var(--muted);font-size:.85rem;margin-bottom:18px">Based on the entire uploaded dataset — no filters applied. Products are classified by demand pattern.</p>
+      <div class="forecast-grid" id="forecastGrid"></div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const API = "http://127.0.0.1:8000";
+let charts = {};
+let appData = { products: [], months: [], years: [], festivals: [] };
+let selectedProducts = new Set();
+
+// ── Colours ──────────────────────────────────────────────────────────────────
+const PALETTE = [
+  "#2A7A6F","#C8872A","#7B6FA0","#C0392B","#2980B9","#27AE60",
+  "#E67E22","#8E44AD","#16A085","#D35400","#2C3E50","#F39C12"
+];
+
+// ── Upload ────────────────────────────────────────────────────────────────────
+const fileInput = document.getElementById("fileInput");
+const uploadCard = document.getElementById("uploadCard");
+
+fileInput.addEventListener("change", () => handleUpload(fileInput.files[0]));
+uploadCard.addEventListener("dragover", e => { e.preventDefault(); uploadCard.classList.add("dragover"); });
+uploadCard.addEventListener("dragleave", () => uploadCard.classList.remove("dragover"));
+uploadCard.addEventListener("drop", e => {
+  e.preventDefault(); uploadCard.classList.remove("dragover");
+  handleUpload(e.dataTransfer.files[0]);
+});
+
+async function handleUpload(file) {
+  if (!file) return;
+  const status = document.getElementById("uploadStatus");
+  status.textContent = "Uploading…";
+  status.className = "";
+  showLoading(true);
+  const fd = new FormData(); fd.append("file", file);
+  try {
+    const res = await fetch(`${API}/upload`, { method: "POST", body: fd });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || "Upload failed");
+    status.textContent = `✅ ${file.name} loaded — ${data.rows.toLocaleString()} rows`;
+    status.className = "status-ok";
+    buildInfoPills(data);
+    appData = data;
+    populateFilters(data);
+    buildProductChips(data.products);
+    document.getElementById("filtersCard").style.display = "block";
+    document.getElementById("chartsSection").style.display = "block";
+    await refreshAll();
+  } catch(e) {
+    status.textContent = `❌ ${e.message}`;
+    status.className = "status-err";
+  } finally { showLoading(false); }
+}
+
+function buildInfoPills({ rows, years, products, festivals }) {
+  document.getElementById("infoPills").innerHTML = [
+    `<span>${rows.toLocaleString()}</span> rows`,
+    `<span>${years.length}</span> years (${years[0]}–${years[years.length-1]})`,
+    `<span>${products.length}</span> products`,
+    `<span>${festivals.length}</span> festivals`,
+  ].map(h => `<div class="pill">${h}</div>`).join("");
+}
+
+function populateFilters({ years, months, festivals }) {
+  const fy = document.getElementById("filterYear");
+  fy.innerHTML = '<option value="">All Years</option>' +
+    years.map(y => `<option>${y}</option>`).join("");
+
+  const fm = document.getElementById("filterMonth");
+  const t5 = document.getElementById("top5Month");
+  fm.innerHTML = '<option value="">All Months</option>';
+  t5.innerHTML = '<option value="">— Pick a month —</option>';
+  months.forEach(m => {
+    fm.innerHTML += `<option value="${m.num}">${m.name}</option>`;
+    t5.innerHTML += `<option value="${m.num}">${m.name}</option>`;
+  });
+
+  const ff = document.getElementById("filterFestival");
+  ff.innerHTML = '<option value="">All Festivals</option>' +
+    festivals.map(f => `<option>${f}</option>`).join("");
+}
+
+function buildProductChips(products) {
+  selectedProducts.clear();
+  if (products.length > 0) selectedProducts.add(products[0]);
+  const wrap = document.getElementById("productChips");
+  wrap.innerHTML = products.map((p, i) =>
+    `<div class="chip ${selectedProducts.has(p)?"selected":""}" onclick="toggleProduct(this,'${p.replace(/'/g,"&#39;")}')">${p}</div>`
+  ).join("");
+}
+
+function toggleProduct(el, p) {
+  if (selectedProducts.has(p)) { selectedProducts.delete(p); el.classList.remove("selected"); }
+  else { selectedProducts.add(p); el.classList.add("selected"); }
+}
+function clearProducts() { selectedProducts.clear(); document.querySelectorAll(".chip").forEach(c=>c.classList.remove("selected")); }
+function selectAllProducts() { appData.products.forEach(p=>selectedProducts.add(p)); document.querySelectorAll(".chip").forEach(c=>c.classList.add("selected")); }
+
+function getFilters() {
+  return {
+    year: document.getElementById("filterYear").value,
+    month: document.getElementById("filterMonth").value,
+    festival: document.getElementById("filterFestival").value,
+    products: [...selectedProducts],
+  };
+}
+
+// ── Refresh all ───────────────────────────────────────────────────────────────
+async function refreshAll() {
+  showLoading(true);
+  try {
+    await Promise.all([loadChart1(), loadChart2(), loadChart3Auto(), loadChart4(), loadChart5()]);
+  } finally { showLoading(false); }
+}
+
+// ── Chart helpers ─────────────────────────────────────────────────────────────
+function destroyChart(id) { if (charts[id]) { charts[id].destroy(); delete charts[id]; } }
+
+function buildParams(overrides = {}) {
+  const f = getFilters();
+  const p = new URLSearchParams();
+  if (f.year) p.set("year", f.year);
+  if (f.festival) p.set("festival", f.festival);
+  if (f.month) p.set("month", f.month);
+  Object.entries(overrides).forEach(([k,v]) => { if(v!==undefined) p.set(k,v); });
+  return p;
+}
+
+// ── Chart 1 ───────────────────────────────────────────────────────────────────
+async function loadChart1() {
+  const f = getFilters();
+  if (!f.products.length) { showEmpty("chart1","Select at least one product"); return; }
+  const p = new URLSearchParams({ products: f.products.join("||") });
+  const res = await fetch(`${API}/chart/trend?${p}`);
+  const data = await res.json();
+  destroyChart("chart1");
+  const allYears = [...new Set(Object.values(data).flatMap(d => d.years))].sort();
+  const datasets = f.products.map((prod, i) => {
+    const d = data[prod];
+    return {
+      label: prod,
+      data: allYears.map(y => { const idx = d?.years.indexOf(y); return idx >= 0 ? d.quantities[idx] : 0; }),
+      borderColor: PALETTE[i % PALETTE.length],
+      backgroundColor: PALETTE[i % PALETTE.length] + "30",
+      tension: 0.4, fill: false, pointRadius: 5, pointHoverRadius: 7,
+    };
+  });
+  const ctx = document.getElementById("chart1").getContext("2d");
+  charts["chart1"] = new Chart(ctx, {
+    type: "line",
+    data: { labels: allYears, datasets },
+    options: chartOpts("Year", "Quantity (kg / units)"),
+  });
+}
+// ── Chart 2 ───────────────────────────────────────────────────────────────────
+async function loadChart2() {
+  const f = getFilters();
+  if (!f.products.length) { showEmpty("chart2","Select at least one product"); return; }
+  const p = buildParams({ products: f.products.join("||") });
+  // Remove month from params — chart 2 ignores month
+  p.delete("month");
+  const res = await fetch(`${API}/chart/monthly?${p}`);
+  const data = await res.json();
+  destroyChart("chart2");
+  const months = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+  const datasets = Object.entries(data).map(([prod, d], i) => ({
+    label: prod, data: d.quantities,
+    borderColor: PALETTE[i % PALETTE.length],
+    backgroundColor: PALETTE[i % PALETTE.length] + "28",
+    tension: 0.4, fill: true, pointRadius: 4,
+  }));
+  const ctx = document.getElementById("chart2").getContext("2d");
+  charts["chart2"] = new Chart(ctx, {
+    type: "line",
+    data: { labels: months.map(m=>m.slice(0,3)), datasets },
+    options: chartOpts("Month","Quantity"),
+  });
+}
+
+// ── Chart 3 ───────────────────────────────────────────────────────────────────
+async function loadChart3() {
+  const month = document.getElementById("top5Month").value;
+  if (!month) { showEmpty("chart3","Please select a month above"); return; }
+  const f = getFilters();
+  const p = new URLSearchParams({ month });
+  if (f.year) p.set("year", f.year);
+  const res = await fetch(`${API}/chart/top5?${p}`);
+  const data = await res.json();
+  destroyChart("chart3");
+  const ctx = document.getElementById("chart3").getContext("2d");
+  charts["chart3"] = new Chart(ctx, {
+    type: "bar",
+    data: {
+      labels: data.products,
+      datasets: [{
+        label: "Total Quantity", data: data.quantities,
+        backgroundColor: PALETTE.slice(0,5),
+        borderRadius: 7,
+      }],
+    },
+    options: { ...chartOpts("Product","Quantity"), plugins: { legend: { display: false } } },
+  });
+}
+async function loadChart3Auto() {
+  const month = document.getElementById("top5Month").value || document.getElementById("filterMonth").value;
+  if (!month) { showEmpty("chart3","Select a month to see Top 5 products"); return; }
+  document.getElementById("top5Month").value = month;
+  await loadChart3();
+}
+
+// ── Chart 4 ───────────────────────────────────────────────────────────────────
+async function loadChart4() {
+  const f = getFilters();
+  const product = f.products[0];
+  if (!product) { showEmpty("chart4","Select a product first"); return; }
+  const p = new URLSearchParams({ product });
+  if (f.year) p.set("year", f.year);
+  if (f.month) p.set("month", f.month);
+  const res = await fetch(`${API}/chart/festival?${p}`);
+  const data = await res.json();
+  destroyChart("chart4");
+
+  // Average all festival days together into one single value
+  const festVals = data.by_festival.quantities;
+  const festAvg = festVals.length
+    ? Math.round(festVals.reduce((a, b) => a + b, 0) / festVals.length * 100) / 100
+    : 0;
+
+  const ctx = document.getElementById("chart4").getContext("2d");
+  charts["chart4"] = new Chart(ctx, {
+    type: "bar",
+    data: {
+      labels: ["Non-Festival Days", "Festival Days"],
+      datasets: [{
+        label: "Avg Sales per Day",
+        data: [data.non_festival_avg, festAvg],
+        backgroundColor: ["#6B7B8D", "#C8872A"],
+        borderRadius: 8,
+        barThickness: 60,
+      }],
+    },
+    options: {
+      ...chartOpts("", "Avg Quantity per Day"),
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: { label: ctx => ` Avg: ${ctx.raw.toLocaleString()} units/day` }
+        }
+      },
+    },
+  });
+} 
+
+// ── Chart 5 Forecast ──────────────────────────────────────────────────────────
+async function loadChart5() {
+  const res = await fetch(`${API}/chart/forecast`);
+  const data = await res.json();
+  const categories = { Stable: [], Seasonal: [], "Festive Demand": [], Rare: [] };
+  data.forEach(d => { if (categories[d.category]) categories[d.category].push(d); });
+  const catStyles = {
+    Stable: { cls: "cat-stable", icon: "🟢" },
+    Seasonal: { cls: "cat-seasonal", icon: "🔄" },
+    "Festive Demand": { cls: "cat-festive", icon: "🪔" },
+    Rare: { cls: "cat-rare", icon: "💤" },
+  };
+  const grid = document.getElementById("forecastGrid");
+  grid.innerHTML = Object.entries(categories).map(([cat, prods]) => {
+    const s = catStyles[cat];
+    const rows = prods.slice(0, 25).map(p =>
+      `<div class="prod-row"><span class="prod-name">${p.product}</span><span class="prod-avg">avg ${p.avg_monthly.toLocaleString()} / mo</span></div>`
+    ).join("") || `<p class="empty-state" style="padding:16px">No products in this category</p>`;
+    return `
+    <div class="category-block">
+      <div class="cat-header ${s.cls}">${s.icon} ${cat} <small style="font-weight:400;font-size:.78rem">(${prods.length} products)</small></div>
+      <div class="cat-body">${rows}</div>
+    </div>`;
+  }).join("");
+}
+
+// ── Utility ───────────────────────────────────────────────────────────────────
+function chartOpts(xLabel, yLabel) {
+  return {
+    responsive: true, maintainAspectRatio: false,
+    plugins: {
+      legend: { position: "bottom", labels: { boxWidth: 12, font: { size: 11 } } },
+      tooltip: { mode: "index", intersect: false },
+    },
+    scales: {
+      x: { title: { display: !!xLabel, text: xLabel, font: { size: 11 } }, grid: { color: "#E0D8CC" } },
+      y: { title: { display: true, text: yLabel, font: { size: 11 } }, grid: { color: "#E0D8CC" }, beginAtZero: true },
+    },
+  };
+}
+function showEmpty(canvasId, msg) {
+  destroyChart(canvasId);
+  const c = document.getElementById(canvasId);
+  const ctx = c.getContext("2d");
+  ctx.clearRect(0,0,c.width,c.height);
+  ctx.fillStyle = "#6B7B8D";
+  ctx.font = "14px 'Segoe UI'";
+  ctx.textAlign = "center";
+  ctx.fillText(msg, c.width/2, c.height/2);
+}
+function showLoading(show) {
+  document.getElementById("loadingOverlay").classList.toggle("show", show);
+}
+function scrollToCharts() {
+  document.getElementById("chartsSection").scrollIntoView({ behavior: "smooth" });
+}
+</script>
+</body>
+</html>
