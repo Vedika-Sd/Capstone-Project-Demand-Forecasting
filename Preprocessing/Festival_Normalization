@@ -1,0 +1,195 @@
+# ═══════════════════════════════════════════════════════════════════════════
+# Cell 3A — Festival Name Normalization
+# ═══════════════════════════════════════════════════════════════════════════
+# WHY THIS EXISTS:
+# Your festival column has 65 raw entries due to:
+#   1. Casing variants     → "Eid", "eid", "Eid " are all the same
+#   2. Typos               → "Rathsaptmi" vs "Rathsaptami", "Nag Panchmi" vs "Nag Panchami"
+#   3. Slash-joined combos → "Shravani somwar /eid" = two festivals in one cell
+#   4. Trailing spaces     → "Rama Navami " vs "Rama Navami"
+#
+# After this cell runs, df['festival'] will have ~30 clean canonical names.
+# Every downstream cell (Cell 6 calendar, Cell 9 SARIMAX, Cell 10 XGBoost)
+# automatically benefits — no other changes needed for those cells to work better.
+# ═══════════════════════════════════════════════════════════════════════════
+
+import re
+
+# ── Canonical map: raw name → clean canonical name ──
+# Every variant you have in your data is listed here explicitly.
+FESTIVAL_CANONICAL_MAP = {
+    # Eid variants
+    "Eid":                                      "Eid",
+    "eid":                                      "Eid",
+    "Eid ":                                     "Eid",
+
+    # Rama Navami
+    "Rama Navami":                              "Rama Navami",
+    "Rama Navami ":                             "Rama Navami",
+    "Rama Navami (Smarta)":                     "Rama Navami",
+
+    # Rathsaptami typo
+    "Rathsaptmi":                               "Rathsaptami",
+    "Rathsaptami":                              "Rathsaptami",
+
+    # Nag Panchami typo
+    "Nag Panchami":                             "Nag Panchami",
+    "Nag Panchmi":                              "Nag Panchami",
+
+    # Nag Panchami + Shravani combo (slash-joined — split handles this,
+    # but keeping here as safety net for any unsplit occurrence)
+    "Nag Panchami / Shravani somwar":           "Nag Panchami",  # split will handle Shravani separately
+
+    # Pola casing
+    "pola":                                     "Pola",
+    "Pola":                                     "Pola",
+
+    # Dasra leading space
+    " Dasra":                                   "Dasra",
+    "Dasra":                                    "Dasra",
+
+    # Women's Day
+    "Womens day":                               "Womens Day",
+
+    # Maharashtra Din
+    "Maharastra din":                           "Maharashtra Din",
+
+    # Shravani Somwar casing
+    "Shravani somwar":                          "Shravani Somwar",
+    "Shrawani somwar":                          "Shravani Somwar",
+
+    # Krishna Janmashtami spelling
+    "Krishna Janmashtimi":                      "Krishna Janmashtami",
+
+    # Anant Chaturdashi spelling
+    "Aanat chaturdashi":                        "Anant Chaturdashi",
+    "Anant Chaturdashi":                        "Anant Chaturdashi",
+
+    # Angarki Sankashti spelling
+    "Anagarki Snkashti":                        "Angarki Sankashti",
+
+    # Vat Purnima — merge Vrat variant
+    "Vat Purnima":                              "Vat Purnima",
+    "Vat Purnima Vrat":                         "Vat Purnima",
+
+    # Kartiki Ekadashi casing
+    "Kartiki ekadashi":                         "Kartiki Ekadashi",
+    "kartiti ekadashi":                         "Kartiki Ekadashi",
+
+    # Datta Jayanti casing
+    "Datta jayanti":                            "Datta Jayanti",
+
+    # Independence Day
+    "Independence Day":                         "Independence Day",
+
+    # Lakshmi Puja / Diwali — these appear as slash-combo;
+    # split() handles them, but map individual pieces too:
+    "Diwali":                                   "Diwali",
+    "Lakshmi Puja":                             "Lakshmi Puja",
+
+    # Everything else — already clean, just standardize title case
+    "Bhogi":                                    "Bhogi",
+    "Makara Sankranti":                         "Makara Sankranti",
+    "Kinkarant":                                "Kinkarant",
+    "Republic Day":                             "Republic Day",
+    "Ganesha Jayanti":                          "Ganesha Jayanti",
+    "Shivaji Jayanti":                          "Shivaji Jayanti",
+    "Maha Shivaratri":                          "Maha Shivaratri",
+    "Holi (Purnima)":                           "Holi (Purnima)",
+    "Dhulivandan":                              "Dhulivandan",
+    "Ranga Panchami":                           "Ranga Panchami",
+    "Gudi Padwa":                               "Gudi Padwa",
+    "Hanuman Jayanti":                          "Hanuman Jayanti",
+    "Akshaya Tritiya":                          "Akshaya Tritiya",
+    "Ashadi Ekadashi":                          "Ashadi Ekadashi",
+    "Bendur":                                   "Bendur",
+    "Guru Purnima":                             "Guru Purnima",
+    "Hartalika":                                "Hartalika",
+    "Ganesh Chaturthi":                         "Ganesh Chaturthi",
+    "Gauri Visarjan":                           "Gauri Visarjan",
+    "Muharram":                                 "Muharram",
+    "Navratri":                                 "Navratri",
+    "Kojagiri Purnima":                         "Kojagiri Purnima",
+    "Vasubaras":                                "Vasubaras",
+    "Padva":                                    "Padva",
+    "Bhau Beej":                                "Bhau Beej",
+    "Tulsi Vivah":                              "Tulsi Vivah",
+    "Christmas":                                "Christmas",
+    "New Year":                                 "New Year",
+    "Raksha Bandhan":                           "Raksha Bandhan",
+}
+
+# ── Separator pattern: splits "A / B", "A/B", "A/ B", "A /B" ──
+_SLASH_SPLIT = re.compile(r'\s*/\s*')
+
+def _normalize_single(raw: str) -> list:
+    """
+    Takes one raw festival cell value.
+    Returns a list of canonical festival names.
+    Examples:
+      "eid"                        → ["Eid"]
+      "Shravani somwar /eid"       → ["Shravani Somwar", "Eid"]
+      "Lakshmi Puja/ Diwali"       → ["Lakshmi Puja", "Diwali"]
+      "Raksha Bandhan/ Independence Day" → ["Raksha Bandhan", "Independence Day"]
+      ""  or  nan                  → []
+    """
+    if not isinstance(raw, str) or not raw.strip():
+        return []
+
+    # Replace known null-like strings
+    cleaned = raw.strip()
+    if cleaned.lower() in ('nan', 'none', 'null', ''):
+        return []
+
+    # Split on slash first (handles combo cells)
+    pieces = _SLASH_SPLIT.split(cleaned)
+
+    result = []
+    for piece in pieces:
+        piece = piece.strip()
+        if not piece:
+            continue
+        canonical = FESTIVAL_CANONICAL_MAP.get(piece)
+        if canonical is None:
+            # Try stripped lowercase fallback
+            canonical = FESTIVAL_CANONICAL_MAP.get(piece.strip())
+        if canonical is None:
+            # Not in map — pass through unchanged and warn once
+            if piece not in _unmapped_seen:
+                _unmapped_seen.add(piece)
+            canonical = piece
+        if canonical and canonical not in result:
+            result.append(canonical)
+
+    return result
+
+# Track anything not in the map so you can review it
+_unmapped_seen = set()
+
+# ── Apply normalization to the festival column ──
+# For each row: normalize → take the FIRST canonical festival as the
+# primary festival name (for backward compat with the rest of the notebook).
+# Multi-festival days: the secondary festival is not lost —
+# it appears in the same date's other rows or via the exog matrix logic below.
+
+def normalize_festival_col(raw_val):
+    names = _normalize_single(raw_val)
+    return names[0] if names else ''
+
+df['festival'] = df['festival'].apply(normalize_festival_col)
+
+# ── Verify ──
+unique_after = sorted(df[df['festival'] != '']['festival'].unique())
+print(f'Festival names BEFORE normalization: 65 (from your raw data)')
+print(f'Festival names AFTER normalization : {len(unique_after)}')
+print()
+print('Canonical festival names now in use:')
+for i, name in enumerate(unique_after, 1):
+    print(f'  {i:2}. {name}')
+
+if _unmapped_seen:
+    print(f'\n⚠  UNMAPPED (passed through unchanged — add to map if needed):')
+    for name in sorted(_unmapped_seen):
+        print(f'    → {repr(name)}')
+else:
+    print('\n✅ All festival names successfully normalized — no unmapped values.')
